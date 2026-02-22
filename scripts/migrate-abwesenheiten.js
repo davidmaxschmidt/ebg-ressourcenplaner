@@ -28,9 +28,14 @@ for (const gruppe of data.gruppen) {
       // Skip Feiertage - those are handled client-side
       if (abw.typ === 'F') continue
 
+      // SP DateTime braucht M/D/YYYY Format via m365 CLI
+      const [y, m, d] = abw.datum.split('-')
+      const spDatum = `${parseInt(m)}/${parseInt(d)}/${y}`
+
       items.push({
         persNr: ma.persNr,
         datum: abw.datum,
+        spDatum,
         typ: abw.typ,
         title: `${ma.persNr}-${abw.datum}`,
       })
@@ -56,7 +61,7 @@ for (let i = 0; i < items.length; i++) {
   }
 
   try {
-    const cmd = `m365 spo listitem add --webUrl "${SITE_URL}" --listTitle "${LIST_TITLE}" --Title "${item.title}" --PersNr "${item.persNr}" --Datum "${item.datum}" --Typ "${item.typ}"`
+    const cmd = `m365 spo listitem add --webUrl "${SITE_URL}" --listTitle "${LIST_TITLE}" --Title "${item.title}" --PersNr "${item.persNr}" --Datum "${item.spDatum}" --Typ "${item.typ}"`
     execSync(cmd, { stdio: 'pipe' })
     created++
   } catch (e) {
