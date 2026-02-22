@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, Fragment } from 'react'
 import { useMitarbeiter, useAbwesenheiten, useSetAbwesenheit, useDeleteAbwesenheit } from '../../api/queries'
 import { getMonthDates, today, monthName } from '../../utils/dates'
 import { isWochenende, isFeiertag, isBetriebsurlaub, getFeiertagName } from '../../utils/feiertage'
@@ -203,8 +203,8 @@ export default function AbwesenheitenView() {
             </thead>
             <tbody>
               {grouped.map(group => (
-                <>
-                  <tr key={`g-${group.name}`} className="gruppe-header" onClick={() => toggleGroup(group.name)}>
+                <Fragment key={group.name}>
+                  <tr className="gruppe-header" onClick={() => toggleGroup(group.name)}>
                     <td className="sticky-col" colSpan={2} style={{ background: '#f0f0f0' }}>
                       {collapsed.has(group.name) ? '>' : 'v'} {group.name} ({group.members.length})
                     </td>
@@ -262,7 +262,7 @@ export default function AbwesenheitenView() {
                       </tr>
                     )
                   })}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
