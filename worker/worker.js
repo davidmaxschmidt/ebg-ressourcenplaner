@@ -435,12 +435,15 @@ async function handleGetGantt(url, env) {
 
   const items = await spGetAll(
     env, "Gantt chart", token,
-    "Id,Title,KostenstelleNr,StartDatum,EndeDatum,Fortschritt",
-    filter, "StartDatum"
+    "Id,Title,KostenstelleNr,Startdatum,Enddatum,Fortschritt",
+    filter, "Startdatum"
   );
   items.forEach((i) => {
-    if (i.StartDatum) i.StartDatum = i.StartDatum.slice(0, 10);
-    if (i.EndeDatum) i.EndeDatum = i.EndeDatum.slice(0, 10);
+    // Normalize to frontend field names
+    i.StartDatum = i.Startdatum ? i.Startdatum.slice(0, 10) : "";
+    i.EndeDatum = i.Enddatum ? i.Enddatum.slice(0, 10) : "";
+    delete i.Startdatum;
+    delete i.Enddatum;
   });
   return json({ value: items });
 }
@@ -451,8 +454,8 @@ async function handleCreateGantt(request, env) {
   const item = await spPost(env, "web/lists/getbytitle('Gantt chart')/items", token, {
     Title: body.Title,
     KostenstelleNr: body.KostenstelleNr,
-    StartDatum: body.StartDatum,
-    EndeDatum: body.EndeDatum,
+    Startdatum: body.StartDatum,
+    Enddatum: body.EndeDatum,
     Fortschritt: body.Fortschritt || 0,
   });
   return json(item, 201);
@@ -461,7 +464,10 @@ async function handleCreateGantt(request, env) {
 async function handleUpdateGantt(id, request, env) {
   const body = await request.json();
   const token = await getToken(env);
-  await spMerge(env, `web/lists/getbytitle('Gantt chart')/items(${id})`, token, body);
+  const spBody = { ...body };
+  if ("StartDatum" in spBody) { spBody.Startdatum = spBody.StartDatum; delete spBody.StartDatum; }
+  if ("EndeDatum" in spBody) { spBody.Enddatum = spBody.EndeDatum; delete spBody.EndeDatum; }
+  await spMerge(env, `web/lists/getbytitle('Gantt chart')/items(${id})`, token, spBody);
   return json({ success: true });
 }
 
