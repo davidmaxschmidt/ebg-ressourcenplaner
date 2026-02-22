@@ -270,13 +270,16 @@ async function handleGetKostenstellen(env) {
   const token = await getToken(env);
   const items = await spGetAll(
     env, "Kostenstellen", token,
-    "Id,Title,Aktiv,Bauleiter,Auftraggeber,StartDatum,EndeDatum",
+    "Id,Title,Aktiv,Bauleiter0,Auftraggeber,StartDatum,EndeDatum",
     "Aktiv eq 1",
     "Title"
   );
   items.forEach((i) => {
     if (i.StartDatum) i.StartDatum = i.StartDatum.slice(0, 10);
     if (i.EndeDatum) i.EndeDatum = i.EndeDatum.slice(0, 10);
+    // Normalize field names for frontend
+    i.Bauleiter = i.Bauleiter0 || "";
+    delete i.Bauleiter0;
   });
   return json({ value: items });
 }
@@ -284,14 +287,21 @@ async function handleGetKostenstellen(env) {
 async function handleUpdateKostenstelle(id, request, env) {
   const body = await request.json();
   const token = await getToken(env);
-  await spMerge(env, `web/lists/getbytitle('Kostenstellen')/items(${id})`, token, body);
+  // Map Bauleiter → Bauleiter0 (Text field, not User field)
+  const spBody = { ...body };
+  if ("Bauleiter" in spBody) {
+    spBody.Bauleiter0 = spBody.Bauleiter;
+    delete spBody.Bauleiter;
+  }
+  await spMerge(env, `web/lists/getbytitle('Kostenstellen')/items(${id})`, token, spBody);
   return json({ success: true });
 }
 
 // --- Kolonnen ---
 async function handleGetKolonnen(env) {
   const token = await getToken(env);
-  const kolonnen = await spGetAll(env, "Kolonnen", token, "Id,Title,Polier", null, "Title");
+  const kolonnen = await spGetAll(env, "Kolonnen", token, "Id,Title,Polier0", null, "Title");
+  kolonnen.forEach((k) => { k.Polier = k.Polier0 || ""; delete k.Polier0; });
   const mitglieder = await spGetAll(
     env, "KolonneMitglieder", token,
     "Id,Title,KolonneId,PersNr",
@@ -317,7 +327,7 @@ async function handleCreateKolonne(request, env) {
   const token = await getToken(env);
   const item = await spPost(env, "web/lists/getbytitle('Kolonnen')/items", token, {
     Title: body.Title,
-    Polier: body.Polier || "",
+    Polier0: body.Polier || "",
   });
   return json(item, 201);
 }
@@ -325,7 +335,12 @@ async function handleCreateKolonne(request, env) {
 async function handleUpdateKolonne(id, request, env) {
   const body = await request.json();
   const token = await getToken(env);
-  await spMerge(env, `web/lists/getbytitle('Kolonnen')/items(${id})`, token, body);
+  const spBody = { ...body };
+  if ("Polier" in spBody) {
+    spBody.Polier0 = spBody.Polier;
+    delete spBody.Polier;
+  }
+  await spMerge(env, `web/lists/getbytitle('Kolonnen')/items(${id})`, token, spBody);
   return json({ success: true });
 }
 
